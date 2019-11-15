@@ -7,7 +7,8 @@ const UserSchema=mongoose. Schema({
         required:true
     },
     password: String,
-    id: String
+    nombre: String,
+    email: String
 })
 const UserModel = mongoose.model('user', UserSchema);
 module.exports= UserModel;
