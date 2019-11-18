@@ -23,7 +23,7 @@ app.use(bodyParser.json({ limit: '10mb' }))
 
 app.use(express.json());
 
-
+//Conectamos a mongoDB
 mongoose.connect('mongodb://localhost:27017/PelculasAlquiler',
 	{
 		useNewUrlParser: true,
@@ -43,6 +43,7 @@ app.get('/user', (req, res) => {
 		.catch(error => console.log(error))
 })
 
+
 // Registra un usuario nuevo
 app.post('/user/register', async (req, res) => {
 	try {
@@ -58,10 +59,10 @@ app.post('/user/register', async (req, res) => {
 				.status(400)
 				.json({ message: `password too short` });
 		} else {
-			if (UserModel.username === req.body.username) {
+			if (user.username == null) {
 				return res
 					.status(400)
-					.json({ message: `username ya esta` });
+					.json({ message: `username es obligatorio` });
 			} else {
 				user.save();
 			}
@@ -75,28 +76,64 @@ app.post('/user/register', async (req, res) => {
 	}
 })
 
-//Logueamos por username
+//Motramos el perfil de un usuario
 app.get('/user/:username', (req, res) => {
 	UserModel.findOne({ username: req.params.username })
 		.then(user => res.send(user))
 		.catch(error => console.log(error))
 })
 
-//Actualiza un usuario existente
-// app.patch('/user/:id', (req, res)=>{
-//     UserModel.findByIdAndUpdate(req.params.id,{
-//         username:req.body.username
-//     }, {new:true, useFindAndModify:false})
-//     .then(user=>res.send(user))
-//     .catch(error=>console.log(error))
-// })
+//Login y obtiene token
+app.post('/login', (req, res) => {
+	var username = req.body.user
+	var password = req.body.password
 
-//Borramos un usuario
-// app.delete('/user/:id', (req, res)=>{
-//     UserModel.findByIdAndDelete(req.params.id)
-//     .then(user=>res.send({message: 'Usuario eliminado satisfactoriamente', user}))//ponemos al final user para que ademas de que en el Postman salga el mensaje tambien salga el user, pero en la base de datos, en MongDB no esta
-//     .catch(error=>console.log(error))
-// })
+	if (!(username === UserModel.username && password === UserModel.password)) {
+		res.status(401).send({
+			error: 'usuario o contraseña inválidos'
+		})
+		return
+	}
+
+	var tokenData = {
+		username: username
+		
+	}
+
+	var token = jwt.sign(tokenData, 'Secret Password', {
+		expiresIn: 60 * 60 * 24 // expira en 24 horas
+	})
+
+	res.send({
+		token
+	})
+})
+
+//Comprobamos que el token del usuario existe y no ha expirado
+app.get('/secure', (req, res) => {
+	var token = req.headers['authorization']
+	if (!token) {
+		res.status(401).send({
+			error: "Es necesario el token de autenticación"
+		})
+		return
+	}
+
+	token = token.replace('Bearer ', '')
+
+	jwt.verify(token, 'Secret Password', function (err, user) {
+		if (err) {
+			res.status(401).send({
+				error: 'Token inválido'
+			})
+		} else {
+			res.send({
+				message: 'Token correcto'
+			})
+		}
+	})
+})
+
 
 //GESTION PELICULAS
 
@@ -124,113 +161,18 @@ app.get('/pelicula/title/:title', (req, res) => {
 
 })
 
-//Muestra genre_id[0] de pelicula
-app.get('/generos/:genreId', (req, res) => {
+//Muestra las peliculas por genero
+app.get('/generos/id/:genreId', (req, res) => {
 
 	let genreId = parseInt(req.params.genreId);
 	console.log(genreId);
 	PeliculaModel.find({
 		genre_ids: genreId
 	}).then((peliculas) => {
-
-		res.send(peliculas);
+		res.send(peliculas)
 
 	}).catch((err) => {
 		console.log(err)
-	})
-
-
-	// GeneroModel.findOne({
-	// 	genreId: req.params.id
-	// }, (err, genero) => {
-	// 	if (err) {
-	// 		res.send(err)
-	// 	}
-
-	// 	var idGenero = { id: genero.id };
-	// 	console.log(idGenero);
-	// 	PeliculaModel.findOne({ id: idGenero }, (errr, id) => {
-	// 		if (err) {
-	// 			res.send(errr)
-	// 		}
-	// 		res.send(id);
-	// 		console.log(id.id)
-	// 	})
-	// })
-	// 	.then(generos => res.send(generos))
-	// 	.catch(error => console.log(error))
-
-
-	// console.log(genero);
-
-})
-
-// app.get('/pelicula/:genero', (req, res) => {
-
-// })
-// app.get('/peliculasGenero', (req, res) => {
-//     peliculasGeneroModel.find({})
-//     .then(moviesGenero => res.send(moviesGenero))
-//     .catch(error => console.log(error))
-// })
-
-// Validacion email
-// const longitudPattern = /.{8,}/
-
-// if (!longitudPattern.test(user.password)) {
-//     return res
-//       .status(400)
-//       .json({ message: `password too short` });
-//  }
-
-
-
-app.post('/login', (req, res) => {
-	var username = req.body.user
-	var password = req.body.password
-
-	if (!(username === UserModel.username && password === UserModel.password)) {
-		res.status(401).send({
-			error: 'usuario o contraseña inválidos'
-		})
-		return
-	}
-
-	var tokenData = {
-		username: username
-		// ANY DATA
-	}
-
-	var token = jwt.sign(tokenData, 'Secret Password', {
-		expiresIn: 60 * 60 * 24 // expires in 24 hours
-	})
-
-	res.send({
-		token
-	})
-})
-
-app.get('/secure', (req, res) => {
-	var token = req.headers['authorization']
-	if (!token) {
-		res.status(401).send({
-			error: "Es necesario el token de autenticación"
-		})
-		return
-	}
-
-	token = token.replace('Bearer ', '')
-
-	jwt.verify(token, 'Secret Password', function (err, user) {
-		if (err) {
-			res.status(401).send({
-				error: 'Token inválido'
-			})
-		} else {
-			res.send({
-				message: 'Awwwww yeah!!!!'
-			})
-		}
 	})
 })
 
@@ -247,9 +189,6 @@ app.post('/pedidos/addPedido', async (req, res) => {
 			fechaEntrega: req.params.fechaEntrega
 			
 		})
-		
-		 
-
 		pedido.save();
 		res.send(pedido);
 	} catch (error) {
@@ -258,7 +197,6 @@ app.post('/pedidos/addPedido', async (req, res) => {
 })
 
 //Leer un pedido por id de usuario que esta en el registro de pedido
-
 app.get('/pedidos/id/:idUsuario', (req, res) => {
 
 	let idUsuario = parseInt(req.params.idUsuario)
