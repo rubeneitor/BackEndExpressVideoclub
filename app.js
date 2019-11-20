@@ -8,7 +8,9 @@ const UserModel = require('./models/User');
 const PeliculaModel = require('./models/Pelicula');
 const GeneroModel = require('./models/Genero');
 const PedidoModel = require('./models/Pedido');
+const EstrenoModel = require('./models/Estreno')
 const mongoose = require('mongoose')
+
 app.use(function (req, res, next) {
 	res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
 	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -35,7 +37,9 @@ mongoose.connect('mongodb://localhost:27017/PelculasAlquiler',
 
 
 //GESTION USUARIOS
-
+app.get('/',(req,res)=>{
+	res.send('hola')
+})
 //Muestra todos los usuarios
 app.get('/user', (req, res) => {
 	UserModel.find({})
@@ -51,7 +55,8 @@ app.post('/user/register', async (req, res) => {
 			username: req.body.username,
 			password: req.body.password,
 			nombre: req.body.nombre,
-			email: req.body.email
+			email: req.body.email,
+			id: req.body.id
 		})
 		const longitudPattern = /.{8,}/
 		if (!longitudPattern.test(user.password)) {
@@ -77,13 +82,13 @@ app.post('/user/register', async (req, res) => {
 })
 
 //Motramos el perfil de un usuario
-app.get('/user/:username', (req, res) => {
+app.get('/user/perfil/:username', (req, res) => {
 	UserModel.findOne({ username: req.params.username })
 		.then(user => res.send(user))
 		.catch(error => console.log(error))
 })
 
-//Login y obtiene token
+// Login y obtiene token
 app.post('/login', (req, res) => {
 	var username = req.body.user
 	var password = req.body.password
@@ -107,6 +112,34 @@ app.post('/login', (req, res) => {
 	res.send({
 		token
 	})
+})
+
+//Login
+app.post('/user/login', (req, res) => {
+    UserModel.findOne({
+            username: req.body.username,
+            password: req.body.password
+        })
+        .then(user => {
+            if (!user) {
+                return res.status(400).send({
+                    message: 'Usuario o contraseña incorrectos'
+                })
+			} 
+			let idUser = user.id;
+			if(idUser !=0){//usuario
+				res.send({
+					message: 'Bienvenido ' + user.username,
+					user
+				})
+			} else {
+				res.send({
+					message: 'Bienvenido Administrador ' + user.username, user
+				})
+			}
+            
+        })
+        .catch(error => res.send(error.message))
 })
 
 //Comprobamos que el token del usuario existe y no ha expirado
@@ -153,6 +186,17 @@ app.get('/pelicula/id/:id', (req, res) => {
 
 })
 
+//Muestra las peliculas de esteno
+app.get('/pelicula/estrenos', (req, res) => {
+	EstrenoModel.find({})
+	.then(estrenos => {
+		res.send(estrenos)
+	})
+	.catch(err => {
+		console.log(err)
+	})
+})
+
 //Muestra la pelicula por titulo
 app.get('/pelicula/title/:title', (req, res) => {
 	PeliculaModel.findOne({ title: req.params.title })
@@ -161,7 +205,7 @@ app.get('/pelicula/title/:title', (req, res) => {
 
 })
 
-//Muestra las peliculas por genero
+//Muestra las peliculas por genero mediante id (18, 28, ...)
 app.get('/generos/id/:genreId', (req, res) => {
 
 	let genreId = parseInt(req.params.genreId);
@@ -176,21 +220,50 @@ app.get('/generos/id/:genreId', (req, res) => {
 	})
 })
 
+//Pelicula por genero mediante nombre (Drama, Acción, ...)
+app.get('/generos/name/:name', (req, res) =>{
+	let nombreGenero = req.params.name;
+	console.log(nombreGenero);
+	GeneroModel.findOne({name: nombreGenero})
+	
+	
+	
+	.then((genero) => {
+		console.log(genero.id)
+		let idGenero = parseInt(genero.id)
+		PeliculaModel.findOne({genre_ids:idGenero})
+		.then((pelicula) =>{
+			res.send(pelicula)
+		})
+		.catch((error)=>{
+			console.log(error)
+		})
+	})
+	.catch((err) => {
+		console.log(err)
+	})
+
+})
+
 //PEDIDOS
 
-//Registrar pedido
+//Registrar pedido con fecha con formato dd/mm/yyyy
 app.post('/pedidos/addPedido', async (req, res) => {
 	try {
 		const pedido = await new PedidoModel({
 			numPedido: req.body.numPedido,
 			idUsuario: req.body.idUsuario,
 			direccion: req.body.direccion,
-			fechaAlquiler:  req.params.fechaAlquiler,
-			fechaEntrega: req.params.fechaEntrega
+			fechaAlquiler:  req.body.fechaAlquiler,
+			fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mimo mes'
 			
 		})
+	
 		pedido.save();
+
 		res.send(pedido);
+		
+
 	} catch (error) {
 		console.log(error)
 	}

@@ -8,12 +8,9 @@ const PedidoSchema=mongoose. Schema({
         required: true
     },
     direccion: String,
-    fechaAlquiler: {
-        type: Date,
-        default: Date.now
-    },
-    fechaEntrega: Date
-     
+    fechaAlquiler: String,
+    fechaEntrega: String
+    
     
 })
 
