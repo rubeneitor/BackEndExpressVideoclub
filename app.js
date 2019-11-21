@@ -37,7 +37,7 @@ mongoose.connect('mongodb://localhost:27017/PelculasAlquiler',
 
 
 //GESTION USUARIOS
-app.get('/',(req,res)=>{
+app.get('/', (req, res) => {
 	res.send('hola')
 })
 //Muestra todos los usuarios
@@ -71,10 +71,7 @@ app.post('/user/register', async (req, res) => {
 			} else {
 				user.save();
 			}
-
 		}
-
-
 		res.send(user);
 	} catch (error) {
 		console.log(error)
@@ -88,46 +85,68 @@ app.get('/user/perfil/:username', (req, res) => {
 		.catch(error => console.log(error))
 })
 
-// Login y obtiene token
-app.post('/login', (req, res) => {
-	var username = req.body.user
-	var password = req.body.password
-
-	if (!(username === UserModel.username && password === UserModel.password)) {
-		res.status(401).send({
-			error: 'usuario o contraseña inválidos'
+//Login y token
+app.post('/user/login', async (req, res) => {
+	try {
+		let user = await UserModel.findOne({
+			username: req.body.username
 		})
-		return
-	}
+		if (!user) {
+			return res.status(400).send({
+				message: 'Usuario o contraseña incorrectos'
+			})
+		}
+		const token = jwt.sign({ _id: user._id }, 'missecretito', {
+			expiresIn: '24h'
+		});
+		await UserModel.findOneAndUpdate({ _id: user._id }, {
+			$push: {
+				tokens: token
+			}
+		})
 
-	var tokenData = {
-		username: username
+		let idUser = user.id;
+			if (idUser != 0) {//usuario
+				res.send({
+					message: 'Bienvenido ' + user.username,
+					user, token
+				})
+			} else {
+				res.send({
+					message: 'Bienvenido Administrador ' + user.username, user, token
+				})
+			}
+		// const isMatch = await user.comparePassword(req.body.password)
+		// if (!isMatch) {
+
+		// 	return res.status(400).send({
+		// 		message: 'Usuario o contraseña incorrectos'
+		// 	})
+		// }
 		
+		
+		
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(error);
 	}
 
-	var token = jwt.sign(tokenData, 'Secret Password', {
-		expiresIn: 60 * 60 * 24 // expira en 24 horas
-	})
-
-	res.send({
-		token
-	})
 })
 
 //Login
 app.post('/user/login', (req, res) => {
-    UserModel.findOne({
-            username: req.body.username,
-            password: req.body.password
-        })
-        .then(user => {
-            if (!user) {
-                return res.status(400).send({
-                    message: 'Usuario o contraseña incorrectos'
-                })
-			} 
+	UserModel.findOne({
+		username: req.body.username,
+		password: req.body.password
+	})
+		.then(user => {
+			if (!user) {
+				return res.status(400).send({
+					message: 'Usuario o contraseña incorrectos'
+				})
+			}
 			let idUser = user.id;
-			if(idUser !=0){//usuario
+			if (idUser != 0) {//usuario
 				res.send({
 					message: 'Bienvenido ' + user.username,
 					user
@@ -137,9 +156,9 @@ app.post('/user/login', (req, res) => {
 					message: 'Bienvenido Administrador ' + user.username, user
 				})
 			}
-            
-        })
-        .catch(error => res.send(error.message))
+
+		})
+		.catch(error => res.send(error.message))
 })
 
 //Comprobamos que el token del usuario existe y no ha expirado
@@ -189,12 +208,12 @@ app.get('/pelicula/id/:id', (req, res) => {
 //Muestra las peliculas de esteno
 app.get('/pelicula/estrenos', (req, res) => {
 	EstrenoModel.find({})
-	.then(estrenos => {
-		res.send(estrenos)
-	})
-	.catch(err => {
-		console.log(err)
-	})
+		.then(estrenos => {
+			res.send(estrenos)
+		})
+		.catch(err => {
+			console.log(err)
+		})
 })
 
 //Muestra la pelicula por titulo
@@ -221,27 +240,27 @@ app.get('/generos/id/:genreId', (req, res) => {
 })
 
 //Pelicula por genero mediante nombre (Drama, Acción, ...)
-app.get('/generos/name/:name', (req, res) =>{
+app.get('/generos/name/:name', (req, res) => {
 	let nombreGenero = req.params.name;
 	console.log(nombreGenero);
-	GeneroModel.findOne({name: nombreGenero})
-	
-	
-	
-	.then((genero) => {
-		console.log(genero.id)
-		let idGenero = parseInt(genero.id)
-		PeliculaModel.findOne({genre_ids:idGenero})
-		.then((pelicula) =>{
-			res.send(pelicula)
+	GeneroModel.findOne({ name: nombreGenero })
+
+
+
+		.then((genero) => {
+			console.log(genero.id)
+			let idGenero = parseInt(genero.id)
+			PeliculaModel.findOne({ genre_ids: idGenero })
+				.then((pelicula) => {
+					res.send(pelicula)
+				})
+				.catch((error) => {
+					console.log(error)
+				})
 		})
-		.catch((error)=>{
-			console.log(error)
+		.catch((err) => {
+			console.log(err)
 		})
-	})
-	.catch((err) => {
-		console.log(err)
-	})
 
 })
 
@@ -254,15 +273,15 @@ app.post('/pedidos/addPedido', async (req, res) => {
 			numPedido: req.body.numPedido,
 			idUsuario: req.body.idUsuario,
 			direccion: req.body.direccion,
-			fechaAlquiler:  req.body.fechaAlquiler,
+			fechaAlquiler: req.body.fechaAlquiler,
 			fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mimo mes'
-			
+
 		})
-	
+
 		pedido.save();
 
 		res.send(pedido);
-		
+
 
 	} catch (error) {
 		console.log(error)
@@ -275,13 +294,13 @@ app.get('/pedidos/id/:idUsuario', (req, res) => {
 	let idUsuario = parseInt(req.params.idUsuario)
 	PedidoModel.find({
 		idUsuario: idUsuario
-	}).then( (pedidos) => {
+	}).then((pedidos) => {
 		res.send(pedidos)
-	}).catch( (err) => {
+	}).catch((err) => {
 		console.log(err)
 	})
-	
-	
+
+
 })
 
 app.listen(3000, () => console.log('servidor levantado correctamente'));
