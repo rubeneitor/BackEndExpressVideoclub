@@ -9,8 +9,10 @@ const PeliculaModel = require('./models/Pelicula');
 const GeneroModel = require('./models/Genero');
 const PedidoModel = require('./models/Pedido');
 const EstrenoModel = require('./models/Estreno')
+
 const mongoose = require('mongoose')
 
+//Funcion que permite enlazar el backend con el frontend, para poder usar los metodos get, post, put y delete para gestionar usuarios, peliculas y pedidos
 app.use(function (req, res, next) {
 	res.header("Access-Control-Allow-Origin", "*"); // update to match the domain you will make the request from
 	res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -18,11 +20,8 @@ app.use(function (req, res, next) {
 	next();
 });
 
-// var md_auth = require('./middlewares/authenticated');
-
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json({ limit: '10mb' }))
-
 app.use(express.json());
 
 //Conectamos a mongoDB
@@ -37,9 +36,6 @@ mongoose.connect('mongodb://localhost:27017/PelculasAlquiler',
 
 
 //GESTION USUARIOS
-app.get('/', (req, res) => {
-	res.send('hola')
-})
 //Muestra todos los usuarios
 app.get('/user', (req, res) => {
 	UserModel.find({})
@@ -47,10 +43,16 @@ app.get('/user', (req, res) => {
 		.catch(error => console.log(error))
 })
 
-
 // Registra un usuario nuevo
 app.post('/user/register', async (req, res) => {
 	try {
+		if(!req.body.username){
+			return res.send({message: 'Tienes que introducir un username'})
+		}
+		const usernameFound = await UserModel.findOne({username: req.body.username})
+		if(usernameFound){
+			return res.send({message: 'Ya existe un usuario con ese username'})
+		}
 		const user = await new UserModel({
 			username: req.body.username,
 			password: req.body.password,
@@ -62,7 +64,7 @@ app.post('/user/register', async (req, res) => {
 		if (!longitudPattern.test(user.password)) {
 			return res
 				.status(400)
-				.json({ message: `password too short` });
+				.json({ message: `password corto` });
 		} else {
 			if (user.username == null) {
 				return res
@@ -96,6 +98,7 @@ app.post('/user/login', async (req, res) => {
 				message: 'Usuario o contraseña incorrectos'
 			})
 		}
+
 		const token = jwt.sign({ _id: user._id }, 'missecretito', {
 			expiresIn: '24h'
 		});
@@ -104,28 +107,19 @@ app.post('/user/login', async (req, res) => {
 				tokens: token
 			}
 		})
+		const isMatch = await user.comparePassword(req.body.password)
+		if (!isMatch) {
 
-		let idUser = user.id;
-			if (idUser != 0) {//usuario
-				res.send({
-					message: 'Bienvenido ' + user.username,
-					user, token
-				})
-			} else {
-				res.send({
-					message: 'Bienvenido Administrador ' + user.username, user, token
-				})
-			}
-		// const isMatch = await user.comparePassword(req.body.password)
-		// if (!isMatch) {
+			return res.status(400).send({
+				message: 'Usuario o contraseña incorrectos'
+			})
+		}
+		else {
+			res.send({
+				message: 'Bienvenido  ' + user.username, user, token
+			})
+		}
 
-		// 	return res.status(400).send({
-		// 		message: 'Usuario o contraseña incorrectos'
-		// 	})
-		// }
-		
-		
-		
 	} catch (error) {
 		console.log(error);
 		res.status(500).send(error);
@@ -133,35 +127,7 @@ app.post('/user/login', async (req, res) => {
 
 })
 
-//Login
-app.post('/user/login', (req, res) => {
-	UserModel.findOne({
-		username: req.body.username,
-		password: req.body.password
-	})
-		.then(user => {
-			if (!user) {
-				return res.status(400).send({
-					message: 'Usuario o contraseña incorrectos'
-				})
-			}
-			let idUser = user.id;
-			if (idUser != 0) {//usuario
-				res.send({
-					message: 'Bienvenido ' + user.username,
-					user
-				})
-			} else {
-				res.send({
-					message: 'Bienvenido Administrador ' + user.username, user
-				})
-			}
-
-		})
-		.catch(error => res.send(error.message))
-})
-
-//Comprobamos que el token del usuario existe y no ha expirado
+//Comprobamos que el token del usuario existe 
 app.get('/secure', (req, res) => {
 	var token = req.headers['authorization']
 	if (!token) {
@@ -190,7 +156,7 @@ app.get('/secure', (req, res) => {
 //GESTION PELICULAS
 
 //Muestra todas las peliculas
-app.get('/pelicula', (req, res, next) => {
+app.get('/pelicula', (req, res) => {
 	PeliculaModel.find({})
 		.then(movies => res.send(movies))
 		.catch(error => console.log(error))
@@ -225,7 +191,7 @@ app.get('/pelicula/title/:title', (req, res) => {
 })
 
 //Muestra las peliculas por genero mediante id (18, 28, ...)
-app.get('/generos/id/:genreId', (req, res) => {
+app.get('/peliculas/generos/id/:genreId', (req, res) => {
 
 	let genreId = parseInt(req.params.genreId);
 	console.log(genreId);
@@ -240,19 +206,18 @@ app.get('/generos/id/:genreId', (req, res) => {
 })
 
 //Pelicula por genero mediante nombre (Drama, Acción, ...)
-app.get('/generos/name/:name', (req, res) => {
+app.get('/peliculas/generos/name/:name', (req, res) => {
 	let nombreGenero = req.params.name;
 	console.log(nombreGenero);
-	GeneroModel.findOne({ name: nombreGenero })
-
-
-
+	GeneroModel.findOne({
+		name: nombreGenero
+	})
 		.then((genero) => {
 			console.log(genero.id)
 			let idGenero = parseInt(genero.id)
-			PeliculaModel.findOne({ genre_ids: idGenero })
+			PeliculaModel.find({ genre_ids: idGenero })
 				.then((pelicula) => {
-					res.send(pelicula)
+					res.send( pelicula)
 				})
 				.catch((error) => {
 					console.log(error)
@@ -269,20 +234,26 @@ app.get('/generos/name/:name', (req, res) => {
 //Registrar pedido con fecha con formato dd/mm/yyyy
 app.post('/pedidos/addPedido', async (req, res) => {
 	try {
-		const pedido = await new PedidoModel({
-			numPedido: req.body.numPedido,
-			idUsuario: req.body.idUsuario,
-			direccion: req.body.direccion,
-			fechaAlquiler: req.body.fechaAlquiler,
-			fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mimo mes'
-
-		})
-
-		pedido.save();
-
-		res.send(pedido);
+		if (!req.body.numPedido) {
+			return res.send({ message: 'Tienes que introducir un numero de pedido' })
+		}
 
 
+		const pedidoFound= await PedidoModel.findOne({ numPedido: req.body.numPedido })
+
+				if (pedidoFound) {
+					return res.send({ message: 'Ya existe un pedido con esta referencia' })
+
+				}
+				const pedido = await new PedidoModel({
+					numPedido: req.body.numPedido,
+					idUsuario: req.body.idUsuario,
+					direccion: req.body.direccion,
+					fechaAlquiler: req.body.fechaAlquiler,
+					fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mismo mes'
+
+				}).save();
+				res.send(pedido);
 	} catch (error) {
 		console.log(error)
 	}

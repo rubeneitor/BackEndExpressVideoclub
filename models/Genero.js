@@ -3,9 +3,13 @@ const mongoose = require('mongoose');
 const GeneroSchema=mongoose. Schema({
     name:String,
     id: String
-    // poster_path: String,
-    // title: String
 })
+
+GeneroSchema.methods.toJSON=function () {
+    const {id, name} =this
+    // title = titulo;
+    return ({id, name})
+}
 
 const GeneroModel = mongoose.model('genero', GeneroSchema);
 module.exports= GeneroModel;

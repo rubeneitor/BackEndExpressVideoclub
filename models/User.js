@@ -15,10 +15,12 @@ const UserSchema=mongoose. Schema({
     tokens:[]
 })
 
-UserSchema.methods.toJSON=function (params) {
+UserSchema.methods.toJSON=function () {
     const user=this._doc;
-    delete user.tokens;
-    delete user.password;
+    // const {id, username, nombre, email, direccion, tokens} = this
+    // delete this.user.tokens;
+    // delete user.password;
+    delete user.tokens
     return user;
 }
 UserSchema.methods.comparePassword=function (password) {

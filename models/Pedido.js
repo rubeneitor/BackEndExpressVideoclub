@@ -2,7 +2,10 @@ const mongoose = require('mongoose');
 
 const PedidoSchema=mongoose. Schema({
     
-    numPedido: Number,
+    numPedido: {
+        type: Number,
+        required: true
+    },
     idUsuario: {
         type: Number,
         required: true
