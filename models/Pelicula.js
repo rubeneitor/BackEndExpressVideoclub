@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-const PeliculaSchema=mongoose. Schema({
-    
+const PeliculaSchema = mongoose.Schema({
+
     id: Number,
     title: String,
     poster_path: String,
@@ -9,10 +9,9 @@ const PeliculaSchema=mongoose. Schema({
     release_date: String,
     original_language: String
 })
-PeliculaSchema.methods.toJSON=function () {
-    const {id, title, poster_path, overview, release_date, original_language} =this
-    // title = titulo;
-    return ({id, title, poster_path, overview, release_date, original_language})
+PeliculaSchema.methods.toJSON = function () {
+    const { id, title, poster_path, overview, release_date, original_language } = this
+    return ({ id, title, poster_path, overview, release_date, original_language })
 }
 const PeliculaModel = mongoose.model('movie', PeliculaSchema);
-module.exports= PeliculaModel;
+module.exports = PeliculaModel;

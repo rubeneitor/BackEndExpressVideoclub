@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
-const PedidoSchema=mongoose. Schema({
-    
+const PedidoSchema = mongoose.Schema({
+
     numPedido: {
         type: Number,
         required: true
@@ -13,9 +13,9 @@ const PedidoSchema=mongoose. Schema({
     direccion: String,
     fechaAlquiler: String,
     fechaEntrega: String
-    
-    
+
+
 })
 
 const PedidoModel = mongoose.model('pedido', PedidoSchema);
-module.exports= PedidoModel;
+module.exports = PedidoModel;

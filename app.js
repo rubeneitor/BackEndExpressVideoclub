@@ -46,12 +46,12 @@ app.get('/user', (req, res) => {
 // Registra un usuario nuevo
 app.post('/user/register', async (req, res) => {
 	try {
-		if(!req.body.username){
-			return res.send({message: 'Tienes que introducir un username'})
+		if (!req.body.username) {
+			return res.send({ message: 'Tienes que introducir un username' })
 		}
-		const usernameFound = await UserModel.findOne({username: req.body.username})
-		if(usernameFound){
-			return res.send({message: 'Ya existe un usuario con ese username'})
+		const usernameFound = await UserModel.findOne({ username: req.body.username })
+		if (usernameFound) {
+			return res.send({ message: 'Ya existe un usuario con ese username' })
 		}
 		const user = await new UserModel({
 			username: req.body.username,
@@ -192,9 +192,7 @@ app.get('/pelicula/title/:title', (req, res) => {
 
 //Muestra las peliculas por genero mediante id (18, 28, ...)
 app.get('/peliculas/generos/id/:genreId', (req, res) => {
-
 	let genreId = parseInt(req.params.genreId);
-	console.log(genreId);
 	PeliculaModel.find({
 		genre_ids: genreId
 	}).then((peliculas) => {
@@ -208,16 +206,14 @@ app.get('/peliculas/generos/id/:genreId', (req, res) => {
 //Pelicula por genero mediante nombre (Drama, Acción, ...)
 app.get('/peliculas/generos/name/:name', (req, res) => {
 	let nombreGenero = req.params.name;
-	console.log(nombreGenero);
 	GeneroModel.findOne({
 		name: nombreGenero
 	})
 		.then((genero) => {
-			console.log(genero.id)
 			let idGenero = parseInt(genero.id)
 			PeliculaModel.find({ genre_ids: idGenero })
 				.then((pelicula) => {
-					res.send( pelicula)
+					res.send(pelicula)
 				})
 				.catch((error) => {
 					console.log(error)
@@ -237,23 +233,20 @@ app.post('/pedidos/addPedido', async (req, res) => {
 		if (!req.body.numPedido) {
 			return res.send({ message: 'Tienes que introducir un numero de pedido' })
 		}
+		const pedidoFound = await PedidoModel.findOne({ numPedido: req.body.numPedido })
 
+		if (pedidoFound) {
+			return res.send({ message: 'Ya existe un pedido con esta referencia' })
+		}
+		const pedido = await new PedidoModel({
+			numPedido: req.body.numPedido,
+			idUsuario: req.body.idUsuario,
+			direccion: req.body.direccion,
+			fechaAlquiler: req.body.fechaAlquiler,
+			fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mismo mes'
 
-		const pedidoFound= await PedidoModel.findOne({ numPedido: req.body.numPedido })
-
-				if (pedidoFound) {
-					return res.send({ message: 'Ya existe un pedido con esta referencia' })
-
-				}
-				const pedido = await new PedidoModel({
-					numPedido: req.body.numPedido,
-					idUsuario: req.body.idUsuario,
-					direccion: req.body.direccion,
-					fechaAlquiler: req.body.fechaAlquiler,
-					fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mismo mes'
-
-				}).save();
-				res.send(pedido);
+		}).save();
+		res.send(pedido);
 	} catch (error) {
 		console.log(error)
 	}
