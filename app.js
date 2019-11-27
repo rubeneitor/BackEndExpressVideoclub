@@ -139,7 +139,7 @@ app.get('/secure', (req, res) => {
 
 	token = token.replace('Bearer ', '')
 
-	jwt.verify(token, 'Secret Password', function (err, user) {
+	jwt.verify(token, 'missecretito', function (err, user) {
 		if (err) {
 			res.status(401).send({
 				error: 'Token inválido'
@@ -184,7 +184,7 @@ app.get('/pelicula/estrenos', (req, res) => {
 
 //Muestra la pelicula por titulo
 app.get('/pelicula/title/:title', (req, res) => {
-	PeliculaModel.findOne({ title: req.params.title })
+	PeliculaModel.find({ title: req.params.title })
 		.then(movie => res.send(movie))
 		.catch(error => console.log(error));
 
