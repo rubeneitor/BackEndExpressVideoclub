@@ -12,6 +12,7 @@ const UserSchema = mongoose.Schema({
     nombre: String,
     email: String,
     direccion: String,
+    telefono:Number,
     tokens: []
 })
 

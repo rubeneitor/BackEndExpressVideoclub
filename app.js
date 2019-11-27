@@ -58,7 +58,9 @@ app.post('/user/register', async (req, res) => {
 			password: req.body.password,
 			nombre: req.body.nombre,
 			email: req.body.email,
-			id: req.body.id
+			id: req.body.id,
+			direccion: req.body.direccion,
+			telefono: req.body.telefono
 		})
 		const longitudPattern = /.{8,}/
 		if (!longitudPattern.test(user.password)) {
