@@ -10,6 +10,7 @@ const PedidoSchema = mongoose.Schema({
         type: Number,
         required: true
     },
+    tituloPelicula: String,
     direccion: String,
     fechaAlquiler: String,
     fechaEntrega: String

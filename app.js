@@ -49,6 +49,10 @@ app.post('/user/register', async (req, res) => {
 		if (!req.body.username) {
 			return res.send({ message: 'Tienes que introducir un username' })
 		}
+
+		if(!req.body.id){
+			return res.send({message: 'Tienes que introducir un id para la base de datos'})
+		}
 		const usernameFound = await UserModel.findOne({ username: req.body.username })
 		if (usernameFound) {
 			return res.send({ message: 'Ya existe un usuario con ese username' })
@@ -76,7 +80,7 @@ app.post('/user/register', async (req, res) => {
 				user.save();
 			}
 		}
-		res.send(user);
+		res.send({message: 'Usuario: ' + user.username + " ha sido registrado satisfactoriamente"});
 	} catch (error) {
 		console.log(error)
 	}
@@ -243,9 +247,10 @@ app.post('/pedidos/addPedido', async (req, res) => {
 		const pedido = await new PedidoModel({
 			numPedido: req.body.numPedido,
 			idUsuario: req.body.idUsuario,
+			tituloPelicula: req.body.tituloPelicula,
 			direccion: req.body.direccion,
 			fechaAlquiler: req.body.fechaAlquiler,
-			fechaEntrega: parseInt(req.body.fechaAlquiler) + 2 + ' del mismo mes'
+			fechaEntrega: req.body.fechaEntrega
 
 		}).save();
 		res.send(pedido);
@@ -268,5 +273,18 @@ app.get('/pedidos/id/:idUsuario', (req, res) => {
 
 
 })
+
+//Leer un pedido por id de movie
+app.get('/pedidos/titleMovie/:title', (req, res) => {
+	let tituloPelicula = req.params.title
+	PedidoModel.find({
+		tituloPelicula: tituloPelicula
+		}).then((pedidos) => {
+			res.send(pedidos)
+	}).catch((err) => {
+		console.log(err)
+	})
+})
+
 
 app.listen(3000, () => console.log('servidor levantado correctamente'));
